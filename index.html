@@ -84,7 +84,8 @@
         
   
             let boxMat = [];
-            for (let i = 0; i < 8; i++) {
+            let boxMatSum = 8;
+            for (let i = 0; i < boxMatSum; i++) {
             boxMat[i] = new BABYLON.StandardMaterial("boxMat", scene);
             boxMat[i].diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
             boxMat[i].specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
@@ -104,7 +105,7 @@
              }
 
 
-            let randomBoxSum = 15;
+            let randomBoxSum = 30;
             let randomBox = [];
              for (let i = 0; i < randomBoxSum; i++) {
                 rndHeight = randomIntFromInterval(5, 15);
@@ -113,15 +114,13 @@
                 height: rndHeight,
                 depth: randomIntFromInterval(5, 15), }, 
                 scene);
-             randomBox[i].material = boxMat[randomIntFromInterval(0, 8)];
-             randomBox[i].position.x = randomIntFromInterval(-60, 60);
-             randomBox[i].position.z = randomIntFromInterval(-60, 60);
-             randomBox[i].position.y = rndHeight/2; 
+             randomBox[i].material = boxMat[randomIntFromInterval(0, boxMatSum)];
+
+             randomBox[i].position = new BABYLON.Vector3(
+                randomIntFromInterval(-60, 60), 
+                rndHeight/2, 
+                randomIntFromInterval(-60, 60));
              }
-
-
-
-
 
             var startingPoint;
             var currentMesh;
@@ -135,21 +134,20 @@
             }
             
             window.onload = function() {
-/*
-                                   for (let m = 0; m < randomBoxSum-1; m++) {     // dispose intersection  not work no ideas
-                                   for (let k = m+1; k < randomBoxSum; k++) {
-                                        if (randomBox[m].intersectsMesh(randomBox[k])) { 
-                                            randomBox[m].dispose();                                                                                                            
-                                        } 
-                                    }
-                                    } 
-*/
-            allMeshes = [];   
-            scene.meshes.forEach(m => {   ///all boxes meshes to arrey          
-                if(m.name !== "ground"){
-                allMeshes.push(m);
-                };                
-            });
+               for (let m = 0; m < randomBoxSum-1; m++) {     // dispose intersection  not work no ideas
+                 for (let k = m+1; k < randomBoxSum; k++) {
+                   if (randomBox[m].intersectsMesh(randomBox[k])) { 
+                       randomBox[m].dispose();                                                                                                            
+                    } 
+                  }
+                } 
+
+               allMeshes = [];   
+                 scene.meshes.forEach(m => {   ///all boxes meshes to arrey          
+                  if(m.name !== "ground"){
+                  allMeshes.push(m);
+                  };                
+               });
             };
 
 
@@ -223,12 +221,12 @@
 
  /////////////////////  engine       
             
-/*
+
         if (BABYLON.VideoRecorder.IsSupported(engine)) {
         var recorder = new BABYLON.VideoRecorder(engine);
-        recorder.startRecording("test.webm", 20);
+        recorder.startRecording("test.webm", 15);
          }
-*/
+
 
             return scene;
         };

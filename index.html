@@ -85,42 +85,57 @@
   
             let boxMat = [];
             let boxMatSum = 8;
+            const texture = new BABYLON.Texture("https://assets.babylonjs.com/environments/numbers.jpg");     
+
             for (let i = 0; i < boxMatSum; i++) {
             boxMat[i] = new BABYLON.StandardMaterial("boxMat", scene);
             boxMat[i].diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
             boxMat[i].specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
             boxMat[i].emissiveColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
-        
+            boxMat[i].diffuseTexture = texture; 
             }
-     
+           
+            ////////////// numbers
+           var columns = 6;
+           var rows = 1;
+           const faceUV = new Array(6);
+           for (let i = 0; i < 6; i++) {
+           faceUV[i] = new BABYLON.Vector4(i / columns, 0, (i + 1) / columns, 1 / rows);
+           }
+           const options = {
+           faceUV: faceUV,
+           //  wrap: true
+           };
+
+
             /*************************************Meshes****************************************/
             // Ground
             var ground = BABYLON.MeshBuilder.CreateGround("ground", {width:160, height:160}, scene, false);
             ground.material = groundMaterial;
         
-            // Meshes
+            // boxes Meshes
 
             function randomIntFromInterval(min, max) { // min and max included
              return Math.floor(Math.random() * (max - min + 1) + min);
              }
 
 
-            let randomBoxSum = 30;
+            let randomBoxSum = 20;
             let randomBox = [];
              for (let i = 0; i < randomBoxSum; i++) {
-                rndHeight = randomIntFromInterval(5, 15);
+                rndHeight = randomIntFromInterval(10, 10);
                 randomBox[i] = BABYLON.MeshBuilder.CreateBox("randomBox", {
-                width: randomIntFromInterval(5, 15), 
+                width: randomIntFromInterval(10, 10), 
                 height: rndHeight,
-                depth: randomIntFromInterval(5, 15), }, 
+                depth: randomIntFromInterval(10, 10),
+                 faceUV: faceUV }, 
                 scene);
-             randomBox[i].material = boxMat[randomIntFromInterval(0, boxMatSum)];
+                randomBox[i].material = boxMat[randomIntFromInterval(0, boxMatSum -1)];
 
-             randomBox[i].position = new BABYLON.Vector3(
-                randomIntFromInterval(-60, 60), 
-                rndHeight/2, 
-                randomIntFromInterval(-60, 60));
+                randomBox[i].position = new BABYLON.Vector3(60 * Math.cos(i * Math.PI/10), 5, 60 * Math.sin(i * Math.PI/10));
              }
+
+
 
             var startingPoint;
             var currentMesh;
@@ -133,23 +148,6 @@
                 return null;
             }
             
-            window.onload = function() {
-               for (let m = 0; m < randomBoxSum-1; m++) {     // dispose intersection  not work no ideas
-                 for (let k = m+1; k < randomBoxSum; k++) {
-                   if (randomBox[m].intersectsMesh(randomBox[k])) { 
-                       randomBox[m].dispose();                                                                                                            
-                    } 
-                  }
-                } 
-
-               allMeshes = [];   
-                 scene.meshes.forEach(m => {   ///all boxes meshes to arrey          
-                  if(m.name !== "ground"){
-                  allMeshes.push(m);
-                  };                
-               });
-            };
-
 
 /////////////////////  engine
             var pointerDown = function (mesh) {
@@ -174,16 +172,15 @@
                 if (!startingPoint) {
                     return;
                 }
-                var current = getGroundPosition();
-                if (!current) {
-                    return;
-                }
+                   var current = getGroundPosition();
+                    if (!current) {
+                      return;
+                   }
         
                 var diff = current.subtract(startingPoint);
                 currentMesh.position.addInPlace(diff);
         
                 startingPoint = current;
-        
             }
 
             scene.onPointerObservable.add((pointerInfo) => { 
@@ -192,19 +189,28 @@
 
         				if(pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh != ground) {            
                             pointerDown(pointerInfo.pickInfo.pickedMesh)  // pic up mesh
-
+                            console.log(currentMesh.getBoundingInfo().boundingBox);                        
                          scene.onBeforeRenderObservable.add(() => {  
+                            randomBox.sort((a,b)=>( a.position.y - b.position.y )) // kod work mach better
 
-                               allMeshes.forEach(function(item, index, array) {                             
+                               randomBox.forEach(function(item, index, array) {                             
                                  if (  !currentMesh.intersectsMesh(item)) { 
-                                     currentMesh.position.y = currentMesh.getBoundingInfo().boundingBox.maximum.y;    // put to ground   
+                                     currentMesh.position.y = currentMesh.getBoundingInfo().boundingBox.maximum.y;    // put to ground  
+
                                     } 
                                }); 
-                               allMeshes.forEach(function(item, index, array) {    // lift box 
-                                 if ( currentMesh.intersectsMesh(item) && currentMesh !== item) {
+
+                               let highest = 0;
+                               randomBox.forEach(function(item, index, array) {    // lift box 
+                         //       item.getBoundingInfo().boundingBox.minimumWorld._y == currentMesh.getBoundingInfo().boundingBox.minimumWorld._y
+                                 if ( currentMesh.intersectsMesh(item) && currentMesh !== item ) {
                                      currentMesh.position.y = item.getBoundingInfo().boundingBox.maximumWorld._y + currentMesh.getBoundingInfo().boundingBox.maximum.y;  
                                     }
                                }); 
+
+
+
+
                         }); 
                         }
         				break;
@@ -219,7 +225,45 @@
         
         });
 
- /////////////////////  engine       
+ /////////////////////  engine  
+ 
+ 
+    // Keyboard events
+    var inputMap = {};
+    scene.actionManager = new BABYLON.ActionManager(scene);
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (evt) {
+        inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+    }));
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (evt) {
+        inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+    }));
+
+ 
+ 
+        scene.onBeforeRenderObservable.add(() => {
+           // var keydown = false;
+            //Manage the movements of the character (e.g. position, direction)
+            if (inputMap["w"]) {
+            //    currentMesh.rotation.y = Math.PI / 2.0;
+                currentMesh.addRotation(0.0, Math.PI / 32.0, 0.0); 
+                console.log(currentMesh.rotation.y); 
+                console.log(currentMesh);                  
+             //   console.log(currentMesh.rotation.y);
+
+
+              //  keydown = true;
+            }
+            if (inputMap["s"]) {
+              //  currentMesh.rotation.z = Math.PI / 2.0;
+              currentMesh.addRotation(Math.PI / 32.0, 0.0,  0.0); 
+          
+             //   keydown = true;
+            }
+
+
+        });
+
+
             
 /*
         if (BABYLON.VideoRecorder.IsSupported(engine)) {
@@ -227,6 +271,55 @@
         recorder.startRecording("test.webm", 15);
          }
 */
+
+
+// add Inspector start  Shift+Ctrl+Alt+I
+async function addInspectorForScene(scene) {
+    const switchDebugLayer = () => {
+      if (scene.debugLayer.isVisible()) {
+        scene.debugLayer.hide();
+      } else {
+        scene.debugLayer.show({ overlay: true });
+      }
+    };
+  
+    // hide/show the Inspector
+    window.addEventListener("keydown", async (ev) => {
+      // Shift+Ctrl+Alt+I
+      if (ev.shiftKey && ev.ctrlKey && ev.altKey && ev.keyCode === 73) {
+        const debuggerScript = document.querySelector("script[inspector]");
+  
+        if (!debuggerScript) {
+          console.log(`Start loading inspector...`);
+          const s = document.createElement("script");
+          s.setAttribute("inspector", "true");
+          s.src =
+            "https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js";
+  
+          s.onload = () => {
+            console.log(`Inspector loaded!`);
+            switchDebugLayer();
+          };
+          s.onerror = () => {
+            console.log(`Inspector failed to load`);
+          };
+          document.body.appendChild(s);
+          return;
+        }
+  
+        switchDebugLayer();
+      }
+    });
+  }
+  
+  addInspectorForScene(scene);
+
+// add Inspector  Shift+Ctrl+Alt+I end
+
+
+
+
+
 
             return scene;
         };
@@ -257,3 +350,4 @@
     </script>
 </body>
 </html>
+
